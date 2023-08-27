@@ -1,13 +1,11 @@
 package com.yenanren.socket_kafka.controller;
 
-import com.yenanren.socket_kafka.entity.Messages;
-import com.yenanren.socket_kafka.webSocket.SessionManager;
-import com.yenanren.socket_kafka.webSocket.core.MyStompFrameHandler;
+import com.yenanren.socket_kafka.manager.SessionManager;
+import com.yenanren.socket_kafka.core.websocket.MyStompFrameHandler;
 import com.yenanren.socket_kafka.worker.WebSocketJob;
-import org.springframework.messaging.handler.annotation.DestinationVariable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
-import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.web.bind.annotation.RestController;
 

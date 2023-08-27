@@ -1,12 +1,14 @@
 
 package com.yenanren.socket_kafka.worker;
 
-import com.yenanren.socket_kafka.webSocket.SessionManager;
+import com.yenanren.socket_kafka.config.TaskSchedulerConfig;
+import com.yenanren.socket_kafka.core.kafka.MessageProducer;
+import com.yenanren.socket_kafka.manager.SessionManager;
 import com.yenanren.socket_kafka.constant.WebSocketConst;
-import com.yenanren.socket_kafka.webSocket.core.MyStompFrameHandler;
+import com.yenanren.socket_kafka.core.websocket.MyStompFrameHandler;
 import com.yenanren.socket_kafka.entity.Messages;
-import com.yenanren.socket_kafka.util.GeneratorKeyUtil;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.util.ObjectUtils;
@@ -17,8 +19,7 @@ import org.springframework.web.socket.sockjs.client.SockJsClient;
 import org.springframework.web.socket.sockjs.client.WebSocketTransport;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -39,6 +40,7 @@ public class Worker implements WorkerInterface<WebSocketJob> {
                     Collections.singletonList(new WebSocketTransport(new StandardWebSocketClient()))
             ));
             this.stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+            this.stompClient.setTaskScheduler(TaskSchedulerConfig.taskScheduler()); // 设置TaskScheduler , 为了异步开启 session.send(headers, chatMessage)
 
             this.stompSession = stompClient.connect(URL, new StompSessionHandlerAdapter() {
             }).get();
@@ -133,7 +135,10 @@ public class Worker implements WorkerInterface<WebSocketJob> {
         chatMessage.setChatroomId(Integer.valueOf(job.getChatroomId()));
 
         if (stompSession.isConnected()) {
-            stompSession.send(job.getConURL(), chatMessage);
+            StompHeaders headers = new StompHeaders();
+            headers.setDestination(job.getConURL());
+            headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
+            stompSession.send(headers, chatMessage);
         } else {
             System.out.println("Connection has already closed");
         }

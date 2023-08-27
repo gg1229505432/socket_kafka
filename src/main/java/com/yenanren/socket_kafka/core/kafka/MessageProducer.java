@@ -1,10 +1,13 @@
-package com.yenanren.socket_kafka.kafka.core;
+package com.yenanren.socket_kafka.core.kafka;
 
 import com.yenanren.socket_kafka.constant.KafkaConst;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.*;
+import org.springframework.stereotype.Service;
+
 import java.util.Properties;
 
+@Service
 public class MessageProducer {
     private static volatile MessageProducer instance; // 使用volatile确保多线程可见性
     private final Producer<String, String> producer;

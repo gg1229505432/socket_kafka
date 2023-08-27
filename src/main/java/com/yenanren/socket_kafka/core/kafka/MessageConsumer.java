@@ -1,21 +1,19 @@
-package com.yenanren.socket_kafka.kafka.core;
+package com.yenanren.socket_kafka.core.kafka;
 
 import cn.hutool.json.JSONUtil;
 import com.yenanren.socket_kafka.constant.KafkaConst;
-import com.yenanren.socket_kafka.webSocket.SessionManager;
+import com.yenanren.socket_kafka.manager.SessionManager;
 import com.yenanren.socket_kafka.entity.Messages;
 import com.yenanren.socket_kafka.util.GeneratorKeyUtil;
-import com.yenanren.socket_kafka.worker.WebSocketJob;
-import com.yenanren.socket_kafka.worker.Worker;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.springframework.messaging.simp.stomp.StompHeaders;
 import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.time.Duration;
 import java.util.*;
 
@@ -71,8 +69,12 @@ public class MessageConsumer {
 
                     String conURL = GeneratorKeyUtil.makeKey(messages.getUserId(), messages.getChatroomId());
                     StompSession session = SessionManager.getInstance().getSession(conURL);
+                    StompHeaders headers = new StompHeaders();
+                    headers.setDestination(conURL);
+                    headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
+
                     if (session != null) {
-                        StompSession.Receiptable receipt = session.send(conURL, chatMessage);
+                        StompSession.Receiptable receipt = session.send(headers, chatMessage);
 
                         // 添加一个钩子来监听回执
                         receipt.addReceiptLostTask(() -> {

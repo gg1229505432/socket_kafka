@@ -1,4 +1,4 @@
-package com.yenanren.socket_kafka.kafka.example;
+package com.yenanren.socket_kafka.client;
 
 import com.yenanren.socket_kafka.constant.KafkaConst;
 import org.apache.kafka.clients.producer.*;

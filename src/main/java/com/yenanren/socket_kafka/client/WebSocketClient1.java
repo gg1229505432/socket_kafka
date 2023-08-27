@@ -1,4 +1,4 @@
-package com.yenanren.socket_kafka.webSocket.example;
+package com.yenanren.socket_kafka.client;
 
 import com.yenanren.socket_kafka.worker.WebSocketJob;
 import com.yenanren.socket_kafka.worker.Worker;
@@ -8,7 +8,7 @@ import java.util.Scanner;
 /**
  * 模拟客户端 1
  */
-public class ChatClient1 {
+public class WebSocketClient1 {
 
     public static void main(String[] args) {
         String userId = "0"; // ggBOM

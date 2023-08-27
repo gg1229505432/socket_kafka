@@ -1,4 +1,4 @@
-package com.yenanren.socket_kafka.kafka.core;
+package com.yenanren.socket_kafka.core.kafka;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;

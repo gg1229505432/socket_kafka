@@ -1,5 +1,6 @@
-package com.yenanren.socket_kafka.webSocket;
+package com.yenanren.socket_kafka.manager;
 
+import com.yenanren.socket_kafka.config.TaskSchedulerConfig;
 import com.yenanren.socket_kafka.constant.WebSocketConst;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
 import org.springframework.messaging.simp.stomp.StompSession;
@@ -57,6 +58,7 @@ public class SessionManager {
 
         WebSocketStompClient stompClient = new WebSocketStompClient(sockJsClient);
         stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClient.setTaskScheduler(TaskSchedulerConfig.taskScheduler()); // 设置TaskScheduler , 为了异步开启 session.send(headers, chatMessage)
         return stompClient;
     }
 
