@@ -25,7 +25,6 @@ public class MyStompFrameHandler implements StompFrameHandler {
      */
     @Override
     public void handleFrame(StompHeaders headers, Object payload) {
-        System.out.println("headers : " + headers);
         Messages chatMessage = (Messages) payload;
         if (chatMessage.getIsSelf() == 1) {
             messageProducer.sendMessageToKafka(JSONUtil.toJsonStr(chatMessage));

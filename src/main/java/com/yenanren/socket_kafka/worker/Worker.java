@@ -137,7 +137,7 @@ public class Worker implements WorkerInterface<WebSocketJob> {
         if (stompSession.isConnected()) {
             StompHeaders headers = new StompHeaders();
             headers.setDestination(job.getConURL());
-            headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
+//            headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
             stompSession.send(headers, chatMessage);
         } else {
             System.out.println("Connection has already closed");

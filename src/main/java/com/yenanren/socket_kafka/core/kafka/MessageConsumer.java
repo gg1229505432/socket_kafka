@@ -71,23 +71,13 @@ public class MessageConsumer {
                     StompSession session = SessionManager.getInstance().getSession(conURL);
                     StompHeaders headers = new StompHeaders();
                     headers.setDestination(conURL);
-                    headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
+//                    headers.setReceipt(UUID.randomUUID().toString()); // 添加回执ID
 
                     if (session != null) {
-                        StompSession.Receiptable receipt = session.send(headers, chatMessage);
+                        session.send(headers, chatMessage);
 
-                        // 添加一个钩子来监听回执
-                        receipt.addReceiptLostTask(() -> {
-                            System.err.println("Receipt for message lost. Message might not have been delivered.");
-                            // 进一步的处理，例如重试发送或记录此事件
-                        });
-
-                        receipt.addReceiptTask(() -> {
-                            System.out.println("Receipt for message received. Message was successfully delivered.");
-                            // 例如，可以在此处确认消息已被成功处理，然后提交Kafka的offset
-                            this.addToSetWithSlidingWindow(messages.getUuid()); // 记录ID
-                            consumer.commitSync(); // 同步提交offset
-                        });
+                        this.addToSetWithSlidingWindow(messages.getUuid()); // 记录ID
+                        consumer.commitSync(); // 同步提交offset
                     }
                 }
             });
