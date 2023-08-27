@@ -7,6 +7,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.UUID;
+
 
 /**
  * 聊天消息 , 用户和系统
@@ -19,6 +21,8 @@ public class Messages {
 
     @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
+
+    private String uuid = UUID.randomUUID().toString();
     /**
      * 聊天室成员ID
      */

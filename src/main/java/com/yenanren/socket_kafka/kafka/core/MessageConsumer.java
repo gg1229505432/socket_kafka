@@ -2,30 +2,30 @@ package com.yenanren.socket_kafka.kafka.core;
 
 import cn.hutool.json.JSONUtil;
 import com.yenanren.socket_kafka.constant.KafkaConst;
-import com.yenanren.socket_kafka.webSocketHandler.SessionManager;
+import com.yenanren.socket_kafka.webSocket.SessionManager;
 import com.yenanren.socket_kafka.entity.Messages;
 import com.yenanren.socket_kafka.util.GeneratorKeyUtil;
+import com.yenanren.socket_kafka.worker.WebSocketJob;
+import com.yenanren.socket_kafka.worker.Worker;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.time.Duration;
-import java.util.Arrays;
-import java.util.Properties;
+import java.util.*;
 
 @Service
-public class MessageConsumer implements Runnable {
-    @PostConstruct
-    public void init() {
-        new Thread(this::run).start();
-    }
+public class MessageConsumer {
 
     private static volatile MessageConsumer instance; // 使用volatile确保多线程可见性
     private final Consumer<String, String> consumer;
+    private static Deque<String> slidingWindow = new LinkedList<>();
+
 
     public MessageConsumer() {
         Properties props = new Properties();
@@ -39,6 +39,7 @@ public class MessageConsumer implements Runnable {
 
         // 设置max.poll.records，比如这里我们设置为10，这意味着一次poll()最多只会返回10条记录
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, 10);
+        props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
 
         consumer = new KafkaConsumer<>(props);
         consumer.subscribe(Arrays.asList(KafkaConst.TOPIC));
@@ -56,25 +57,59 @@ public class MessageConsumer implements Runnable {
         return instance;
     }
 
-    @Override
+    @Async
     public void run() {
+
         while (true) {
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
+
             records.forEach(record -> {
-                // 假设这是调用OpenAI API的方法
-
                 Messages messages = JSONUtil.toBean(record.value(), Messages.class);
-                if (messages != null) {
+                if (messages != null && !slidingWindow.contains(messages.getUuid())) {
 
-                    String response = callOpenAIApi(messages.getContent());
+                    Messages chatMessage = mockMessage(messages);
 
                     String conURL = GeneratorKeyUtil.makeKey(messages.getUserId(), messages.getChatroomId());
-                    StompSession session = SessionManager.getSession(conURL);
+                    StompSession session = SessionManager.getInstance().getSession(conURL);
                     if (session != null) {
-                        session.send(conURL, response); // 发送到聊天室
+                        StompSession.Receiptable receipt = session.send(conURL, chatMessage);
+
+                        // 添加一个钩子来监听回执
+                        receipt.addReceiptLostTask(() -> {
+                            System.err.println("Receipt for message lost. Message might not have been delivered.");
+                            // 进一步的处理，例如重试发送或记录此事件
+                        });
+
+                        receipt.addReceiptTask(() -> {
+                            System.out.println("Receipt for message received. Message was successfully delivered.");
+                            // 例如，可以在此处确认消息已被成功处理，然后提交Kafka的offset
+                            this.addToSetWithSlidingWindow(messages.getUuid()); // 记录ID
+                            consumer.commitSync(); // 同步提交offset
+                        });
                     }
                 }
             });
+        }
+    }
+
+    private Messages mockMessage(Messages messages) {
+        String response = callOpenAIApi(messages.getContent());
+
+        Messages chatMessage = new Messages();
+        chatMessage.setUsername("AI");
+        chatMessage.setContent(response);
+        chatMessage.setIsSelf(0);
+        chatMessage.setUserId(messages.getUserId());
+        chatMessage.setChatroomId(messages.getChatroomId());
+
+        return chatMessage;
+    }
+
+    private void addToSetWithSlidingWindow(String uuid) {
+        slidingWindow.addLast(uuid);
+
+        while (slidingWindow.size() > 10000) {
+            slidingWindow.removeFirst();
         }
     }
 

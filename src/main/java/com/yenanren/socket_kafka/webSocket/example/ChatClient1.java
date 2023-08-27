@@ -1,4 +1,4 @@
-package com.yenanren.socket_kafka.webSocketHandler.example;
+package com.yenanren.socket_kafka.webSocket.example;
 
 import com.yenanren.socket_kafka.worker.WebSocketJob;
 import com.yenanren.socket_kafka.worker.Worker;
@@ -6,15 +6,16 @@ import com.yenanren.socket_kafka.worker.Worker;
 import java.util.Scanner;
 
 /**
- * 模拟客户端 2
+ * 模拟客户端 1
  */
-public class ChatClient2 {
+public class ChatClient1 {
 
     public static void main(String[] args) {
-        String userId = "someUserId"; // ggBOM
-        String chatroomId = "someChatroomId"; // originalGPT
-        int isSelf = 0;
+        String userId = "0"; // ggBOM
+        String chatroomId = "1"; // originalGPT
+        int isSelf = 1;
         Worker worker = new Worker();
+
         WebSocketJob job = new WebSocketJob(userId, chatroomId);
         try {
             worker.before(job);
@@ -25,6 +26,7 @@ public class ChatClient2 {
             System.out.println(e.getMessage());
         }
 
+
         Scanner scanner = new Scanner(System.in);
         System.out.println("Enter your username: ");
         String username = scanner.nextLine();
@@ -34,7 +36,7 @@ public class ChatClient2 {
         do {
             message = scanner.nextLine();
             if (!"exit".equalsIgnoreCase(message)) {
-                worker.sendMessage(username, message, isSelf, job);
+                worker.sendMessage(username, message, isSelf, job); // 发送消息到 Kafka 或者 websocket
             }
         } while (!"exit".equalsIgnoreCase(message));
 

@@ -1,9 +1,9 @@
 
 package com.yenanren.socket_kafka.worker;
 
-import com.yenanren.socket_kafka.webSocketHandler.SessionManager;
+import com.yenanren.socket_kafka.webSocket.SessionManager;
 import com.yenanren.socket_kafka.constant.WebSocketConst;
-import com.yenanren.socket_kafka.webSocketHandler.core.MyStompFrameHandler;
+import com.yenanren.socket_kafka.webSocket.core.MyStompFrameHandler;
 import com.yenanren.socket_kafka.entity.Messages;
 import com.yenanren.socket_kafka.util.GeneratorKeyUtil;
 import org.springframework.messaging.converter.MappingJackson2MessageConverter;
@@ -59,23 +59,14 @@ public class Worker implements WorkerInterface<WebSocketJob> {
             conURL = "/topic/publicChatRoom";
         }
         job.setConURL(conURL);
-
-        Map<String, String> connectedMessage = new HashMap<>();
-        connectedMessage.put("type", "connected");
-        connectedMessage.put("userId", userId);
-        connectedMessage.put("chatroomId", chatroomId);
-        job.setConnectedMessage(connectedMessage);
-
+        job.setType("connected");
         job.setStatus("before");
     }
 
     @Override
     public void process(WebSocketJob job) {
-        Map<String, String> connectedMessage = job.getConnectedMessage();
-        String conURL = job.getConURL();
-
-        stompSession.send("/app/connectedNotification", connectedMessage);  // 通知服务器我已连接
-        stompSession.subscribe(conURL, new MyStompFrameHandler());
+        stompSession.send("/app/connectedNotification", job);  // 通知服务器我已连接
+        stompSession.subscribe(job.getConURL(), new MyStompFrameHandler());
 
         job.setStatus("process");
     }
@@ -84,13 +75,12 @@ public class Worker implements WorkerInterface<WebSocketJob> {
     public void after(WebSocketJob job) {
         String conURL = job.getConURL();
         if (StringUtils.hasLength(conURL)) {
-            if (SessionManager.getSession(conURL) == null) {
-                SessionManager.addSession(conURL, stompSession);
+            if (SessionManager.getInstance().getSession(conURL) == null) {
+                SessionManager.getInstance().addSession(conURL, stompSession);
             }
         }
-        System.out.println(SessionManager.sessions);
 
-        scheduler.schedule(() -> this.onDown(job), 1, TimeUnit.MINUTES);
+        scheduler.schedule(() -> this.onDown(job), 3, TimeUnit.MINUTES);
 
         job.setStatus("after");
     }
@@ -98,6 +88,9 @@ public class Worker implements WorkerInterface<WebSocketJob> {
     @Override
     public void onDown(WebSocketJob job) {
         String conURL = job.getConURL();
+        job.setType("disconnected");
+        stompSession.send("/app/disconnectedNotification", job);  // 通知服务器我已断连接
+
         if (stompSession != null && stompSession.isConnected()) {
             stompSession.disconnect();
         }
@@ -105,14 +98,10 @@ public class Worker implements WorkerInterface<WebSocketJob> {
             stompClient.stop();
         }
 
-        Map<String, String> disconnectedMessage = new HashMap<>();
-        disconnectedMessage.put("type", "disconnected");
-        disconnectedMessage.putAll(GeneratorKeyUtil.parseKeyToMap(conURL)); // 放 user chatroomId 用的
-        stompSession.send("/app/disconnectedNotification", disconnectedMessage);  // 通知服务器我已断连接
 
         scheduler.shutdown(); // Make sure to shutdown the scheduler
         if (StringUtils.hasLength(conURL)) {
-            SessionManager.removeSession(conURL);
+            SessionManager.getInstance().removeSession(conURL);
         }
 
         job.setStatus("onDown");
@@ -140,11 +129,11 @@ public class Worker implements WorkerInterface<WebSocketJob> {
         chatMessage.setUsername(sender);
         chatMessage.setContent(content);
         chatMessage.setIsSelf(isSelf);
-
-        String sendURL = job.getConURL();
+        chatMessage.setUserId(Integer.valueOf(job.getUserId()));
+        chatMessage.setChatroomId(Integer.valueOf(job.getChatroomId()));
 
         if (stompSession.isConnected()) {
-            stompSession.send(sendURL, chatMessage);
+            stompSession.send(job.getConURL(), chatMessage);
         } else {
             System.out.println("Connection has already closed");
         }

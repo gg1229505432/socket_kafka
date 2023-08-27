@@ -1,4 +1,4 @@
-package com.yenanren.socket_kafka.webSocketHandler.core;
+package com.yenanren.socket_kafka.webSocket.core;
 
 import cn.hutool.json.JSONUtil;
 import com.yenanren.socket_kafka.kafka.core.MessageProducer;
@@ -28,7 +28,6 @@ public class MyStompFrameHandler implements StompFrameHandler {
         Messages chatMessage = (Messages) payload;
         if (chatMessage.getIsSelf() == 1) {
             messageProducer.sendMessageToKafka(JSONUtil.toJsonStr(chatMessage));
-            System.out.println("发送到 Kafka: " + chatMessage);
         }
 
         System.out.println(chatMessage.getUsername() + ": " + chatMessage.getContent());

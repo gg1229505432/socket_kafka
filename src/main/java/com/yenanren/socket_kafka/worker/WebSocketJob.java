@@ -2,6 +2,7 @@ package com.yenanren.socket_kafka.worker;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.messaging.simp.stomp.StompSession;
 
 import java.util.Map;
 
@@ -11,9 +12,9 @@ public class WebSocketJob {
     private String userId;
     private String chatroomId;
     private String conURL;
-    private Map<String, String> connectedMessage;
-    private Map<String, String> disconnectedMessage;
+    private String type;
     private String status;
+    private StompSession stompSession;
 
     public WebSocketJob(String userId, String chatroomId) {
         this.userId = userId;

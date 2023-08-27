@@ -3,7 +3,6 @@ package com.yenanren.socket_kafka.kafka.core;
 import com.yenanren.socket_kafka.constant.KafkaConst;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.*;
-
 import java.util.Properties;
 
 public class MessageProducer {

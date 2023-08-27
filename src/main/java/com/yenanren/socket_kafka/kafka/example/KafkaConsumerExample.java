@@ -29,12 +29,6 @@ public class KafkaConsumerExample {
             });
         }
 
-//        // 获取 MessageConsumer 单例
-//        MessageConsumer consumer = MessageConsumer.getInstance();
-//
-//        // 创建一个新线程并启动
-//        Thread consumerThread = new Thread(consumer);
-//        consumerThread.start();
 
     }
 
