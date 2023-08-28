@@ -6,7 +6,7 @@ This project integrates WebSockets for real-time chat functionality and Kafka fo
 
 ## Architecture diagram
 
-![d-tbtJbQkQ](/Volumes/Macintosh HD/Users/wangyi/Documents/github_my/socket_kafka/resource/d-tbtJbQkQ.svg)
+![d-tbtJbQkQ](./resource/d-tbtJbQkQ.svg)
 
 
 
