@@ -1,6 +1,7 @@
 package com.yenanren.socket_kafka.core.kafka;
 
 import cn.hutool.json.JSONUtil;
+import com.yenanren.socket_kafka.config.TaskSchedulerConfig;
 import com.yenanren.socket_kafka.constant.KafkaConst;
 import com.yenanren.socket_kafka.manager.SessionManager;
 import com.yenanren.socket_kafka.entity.Messages;
@@ -9,13 +10,17 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.springframework.messaging.simp.stomp.StompHeaders;
-import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.*;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.Type;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
 public class MessageConsumer {
@@ -75,13 +80,72 @@ public class MessageConsumer {
 
                     if (session != null) {
                         session.send(headers, chatMessage);
-
+                        heartBeat(conURL);
                         this.addToSetWithSlidingWindow(messages.getUuid()); // 记录ID
                         consumer.commitSync(); // 同步提交offset
                     }
                 }
             });
         }
+    }
+
+    /**
+     * 发送心跳包
+     */
+    private void heartBeat(String conURL) {
+        ThreadPoolTaskScheduler scheduler = TaskSchedulerConfig.taskScheduler();
+        new StompSessionHandlerAdapter() {
+            private final AtomicBoolean receivedHeartbeatResponse = new AtomicBoolean(true);
+
+            @Override
+            public void handleTransportError(StompSession session, Throwable exception) {
+                // Handle transport errors here, e.g., when the WebSocket connection is lost
+                scheduler.shutdown(); // Shut down the scheduler when an error occurs
+            }
+
+            @Override
+            public void afterConnected(StompSession session, StompHeaders connectedHeaders) {
+                // Schedule the heartbeat task after the connection is established
+                scheduler.scheduleAtFixedRate(() -> {
+                    if (session != null && session.isConnected()) {
+                        if (!receivedHeartbeatResponse.get()) {
+                            session.disconnect(); // Disconnect if no proper response received
+                            scheduler.shutdown(); // Shut down the scheduler
+                            return;
+                        }
+
+                        receivedHeartbeatResponse.set(false); // Reset the flag
+
+                        StompHeaders headers = new StompHeaders();
+                        headers.setDestination(conURL);
+                        String uniqueHeartbeatId = UUID.randomUUID().toString();
+//                        headers.set("heartbeat-id", uniqueHeartbeatId);
+                        session.send(headers, "heartbeat"); // 发送心跳消息
+
+                        // Listen for the response
+                        session.subscribe(conURL, new StompFrameHandler() {
+                            @Override
+                            public Type getPayloadType(StompHeaders headers) {
+                                return Messages.class;
+                            }
+
+
+                            @Override
+                            public void handleFrame(StompHeaders headers, Object payload) {
+                                Messages chatMessage = (Messages) payload;
+
+                                if (chatMessage != null) {
+                                    receivedHeartbeatResponse.set(true);
+                                }
+                            }
+                        });
+                    } else {
+                        scheduler.shutdown(); // If the session is not connected, shut down the scheduler
+                    }
+                }, 5 * 1000);
+            }
+        };
+
     }
 
     private Messages mockMessage(Messages messages) {
