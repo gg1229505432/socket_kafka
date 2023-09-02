@@ -8,11 +8,17 @@ This project integrates WebSockets for real-time chat functionality and Kafka fo
 
 ![d-tbtJbQkQ](./resource/d-tbtJbQkQ.svg)
 
+- **WebSocket-Kafka Architecture Diagram**: 
+
+![WebSocket-Kafka Architecture Diagram](./resource/WebSocket-Kafka Architecture Diagram.png)
+
+- **WebSocket-Kafka Class Interaction Diagram (Styled)**:
+
+![WebSocket-Kafka Class Interaction Diagram (Styled)](./resource/WebSocket-Kafka Class Interaction Diagram (Styled).png)
+
 
 
 ---
-
-
 
 ## Features
 
