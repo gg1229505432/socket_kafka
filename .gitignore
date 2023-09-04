@@ -1,0 +1,16 @@
+# Java related
+*.class
+target/
+bin/
+build/
+
+# IDE related (e.g., Eclipse, IntelliJ IDEA)
+.classpath
+.project
+.settings/
+*.iml
+.idea/
+.vscode/
+
+# Mac OS system file
+.DS_Store
